@@ -35,3 +35,33 @@ class Network:
     def _link_players(self):
         for i, player in enumerate(self.players):
             player.next = self.players[(i + 1) % self.num_players]
+
+    """Returns the next player in the ring network."""
+
+    def get_next_player(self, player):
+        return player.next
+
+    """Returns the IP and port of the next player in the ring network."""
+
+    def get_next_ip_port(self, player):
+        next_player = self.get_next_player(player)
+        return next_player.ip, next_player.port
+
+    """Removes a player from the network and re-links the remaining players."""
+
+    def remove_player(self, player_id):
+        self.players = [player for player in self.players if player.id != player_id]
+        self.num_players -= 1
+        self._link_players()
+
+    """Binds the network socket to the specified IP and returns the corresponding player."""
+
+    def get_chair(self, ip):
+        for player in self.players:
+            if player.ip == ip:
+                self.socket.bind((player.ip, player.port))
+                return player
+        raise ValueError("Player not found")
+
+    def __repr__(self):
+        return f"Network(num_players={self.num_players}, players={self.players})"
