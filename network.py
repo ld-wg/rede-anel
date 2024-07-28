@@ -83,6 +83,8 @@ class Network:
         raise ValueError("Player not found")
 
     """Retorna uma lista dos jogadores ordenados de player.anterior ate player.proximo."""
+    # Funcao utilizada para finalizar rotinas, um jogador envia mensagem para os outros pararem de escutar
+    # Se faz necessario "desligar" os jogadores na ordem correta, ou a integridade da rede pode ser prejudicada
 
     def get_reversed_ordered_players(self, starting_player: Player) -> list[Player]:
         ordered_players = []
