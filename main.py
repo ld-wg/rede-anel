@@ -1,4 +1,3 @@
-# Pseudo codigo do jogo fodinha
 from utils import distribute_cards, wait_for_cards, send_bids, wait_and_respond_to_bids
 from network import Network
 import logging
