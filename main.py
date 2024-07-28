@@ -1,45 +1,45 @@
 # Pseudo codigo do jogo fodinha
+from utils import distribute_cards, wait_for_cards, send_bids, wait_and_respond_to_bids
+from network import Network
+import logging
+import socket
+import os
 
-INICIAR
+logging.basicConfig(level=logging.DEBUG)
 
-IMPORTAR bibliotecas necessárias:
-    socket
-    Network
-    Message
-    random
-    pickle
-    os
 
-INICIAR rede (Network)
-INICIAR lista de jogadores (players)
-INICIAR quantidade de vidas dos jogadores (12 vidas cada)
-INICIAR rodada atual (1)
-INICIAR número de cartas na rodada (13 cartas)
+def main():
+    # Init network and players
+    network = Network()
+    address = socket.gethostbyname(socket.gethostname())
+    local_player = network.get_chair(address)
 
-ENQUANTO número de jogadores com vida > 1:
-    LIMPAR tela
-    EMBARALHAR cartas (deck)
-    
-    DISTRIBUIR cartas para jogadores (conforme número de cartas na rodada)
-    
-    PARA cada jogador:
-        PEDIR palpite (quantidade de jogadas que acredita fazer)
-    
-    INICIAR jogadas na rodada
-    INICIAR jogador inicial (primeiro jogador à direita do embaralhador)
-    
-    PARA cada jogada na rodada:
-        PARA cada jogador em ordem:
-            JOGAR uma carta na mesa
-        DETERMINAR vencedor da jogada (carta mais alta ganha)
-        ATUALIZAR jogador inicial para a próxima jogada (vencedor da jogada)
-    
-    CALCULAR resultados da rodada:
-    PARA cada jogador:
-        COMPARAR palpite com jogadas feitas
-        ATUALIZAR vidas do jogador (perder diferença entre palpite e jogadas feitas)
-    
-    ATUALIZAR número de cartas na rodada (diminuir para próxima rodada, ou aumentar após chegar a 1 carta)
+    cards_in_round = 13
 
-EXIBIR vencedor (último jogador com vida)
-FINALIZAR
+    while any(player.lives > 0 for player in network.players):
+        os.system("clear")  # Clear the screen
+
+        # Apenas o dealer envia as mensagens do tipo "shuffle" para entregar as cartas,
+        # Outros players aguardam as mensagens, se forem destinatarios enviam "confirm_shuffle" para o dealer enviar a proxima carta
+        # Quando acabam as cartas, o dealer envia um "end_shuffle" para todos os jogadores, ordenados do anterior ate o proximo
+        # Nessa ordem entao os players param de esperar por mensagem "shuffle", garantindo que nenhuma mensagem pare de circular caso algum player pare de escutar antes da hora
+
+        if local_player.dealer:
+            distribute_cards(local_player, network, cards_in_round)
+        else:
+            wait_for_cards(local_player, network)
+
+        # Novamente apenas o dealer ira enviar as mensagens do tipo "bid" para cada outro jogador.
+        # Outros players aguardam a mensagem, se forem destinararios, colocam a "bid" e confirm=true na mensagem, e enviam para o dealer
+        # Quandos acabarem os players, o dealer envia uma mensagem para todos com "end_bid", ordenados do anterior ate o proximo
+        # Nessa ordem entao os players param de esperar por mensagem "bid", garantindo que nenhuma mensagem pare de circular caso algum player pare de escutar antes da hora
+        if local_player.dealer:
+            send_bids(network, cards_in_round)
+        else:
+            wait_and_respond_to_bids(local_player, network, cards_in_round)
+
+        network.pass_dealer()
+
+
+if __name__ == "__main__":
+    main()
