@@ -16,6 +16,7 @@ class Player:
         self.next: Player = None  # Link to the next player for the ring network
 
     def receive_card(self, card):
+        print(f"Player {self.ip} received card {card}")
         self.cards.append(int(card))
         self.cards.sort()
 

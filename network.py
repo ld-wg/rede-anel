@@ -26,7 +26,7 @@ class Network:
     def _init_players(self):
         for player_info in self.config_players:
             new_player = Player(
-                id=player_info["id"],
+                player_id=player_info["id"],
                 ip=player_info["addr"],
                 port=player_info["port"],
             )
