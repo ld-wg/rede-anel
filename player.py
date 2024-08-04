@@ -1,8 +1,11 @@
+from typing import Tuple
+
+
 START_LIFE = 12  # Initialize with 12 lives
 
 
 class Player:
-    def __init__(self, player_id, ip, port):
+    def __init__(self, player_id: str, ip: str, port: str):
         self.id = player_id
         self.ip = ip
         self.port = port
@@ -14,19 +17,24 @@ class Player:
         self.stick = False
         self.turn = False
         self.next: Player = None  # Link to the next player for the ring network
+        self.plays: list[tuple[int, str]] = []
 
     def receive_card(self, card):
         print(f"Player {self.ip} received card {card}")
         self.cards.append(int(card))
         self.cards.sort()
 
-    def play_card(self, index):
-        # TODO: Implement the logic for playing a card
-        try:
-            return self.cards.pop(int(index))
-        except IndexError:
-            print(f"No card at index {index}")
-            return None
+    def play_card(self) -> int:
+        while True:
+            try:
+                card_input = int(input(f"Choose a card from your hand: {self.cards} "))
+                if card_input in self.cards:
+                    self.cards.remove(card_input)
+                    return card_input
+                else:
+                    print("Sorry, you don't have this card. Please try another.")
+            except ValueError:
+                print("Please enter a valid number.")
 
     def set_bid(self, bid):
         self.bid = int(bid)
@@ -51,6 +59,9 @@ class Player:
 
     def get_roud_wins(self) -> int:
         return self.round_wins
+
+    def reset_plays(self):
+        self.plays = []
 
     def __repr__(self):
         return (

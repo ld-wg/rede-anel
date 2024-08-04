@@ -18,6 +18,7 @@ class Message:
         "shuffle",
         "bid",
         "play",
+        "end_play",
         "confirm_shuffle",
         "end_shuffle",
         "end_bid",

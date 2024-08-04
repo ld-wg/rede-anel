@@ -1,4 +1,11 @@
-from utils import distribute_cards, wait_for_cards, send_bids, wait_and_respond_to_bids
+from utils import (
+    distribute_cards,
+    get_cards,
+    wait_for_cards,
+    send_bids,
+    wait_and_respond_to_bids,
+    wait_get_cards,
+)
 from network import Network
 import logging
 import socket
@@ -41,9 +48,16 @@ def main():
 
         print(f"Player {local_player.ip} successfuly exited collecting bids")
 
-        # while True:
-        #     raw_data = network.socket.recv(4096)
-        #     network.socket.sendto(raw_data, network.get_ip_port(local_player.next))
+        if local_player.dealer:
+            get_cards(network, cards_in_round)
+        else:
+            wait_get_cards(network, local_player)
+
+        print(f"Player {local_player.ip} successfuly exited round")
+
+        while True:
+            raw_data = network.socket.recv(4096)
+            network.socket.sendto(raw_data, network.get_ip_port(local_player.next))
 
         network.pass_dealer()
 

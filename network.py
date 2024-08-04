@@ -100,5 +100,15 @@ class Network:
         # Reverte a lista para começar pelo jogador anterior ao de entrada
         return ordered_players.reverse()
 
+    def get_players_starting_with(self, starting_player: Player) -> list[Player]:
+        ordered_players = [starting_player]
+        current_player = starting_player.next
+
+        while current_player != starting_player:
+            ordered_players.append(current_player)
+            current_player = current_player.next
+
+        return ordered_players
+
     def __repr__(self):
         return f"Network(players={self.players})"
