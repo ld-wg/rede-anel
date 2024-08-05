@@ -38,7 +38,6 @@ class Network:
 
     def _assign_initial_dealer(self):
         self.players[0].set_dealer()
-        self.players[0].get_stick()
 
     def find_dealer(self) -> Player:
         for player in self.players:
@@ -47,13 +46,23 @@ class Network:
         raise ValueError("Dealer not found")
 
     def pass_dealer(self):
-        current_dealer = self.find_dealer()
+        current_dealer = self.players[0]
+        for player in self.players:
+            if player.dealer:
+                current_dealer = player
+
         current_dealer.next.set_dealer()
         current_dealer.unset_dealer()
 
     def get_player_by_id(self, id) -> Player:
         for player in self.players:
             if player.id == id:
+                return player
+        raise ValueError("Player not found")
+
+    def get_player_by_ip(self, ip) -> Player:
+        for player in self.players:
+            if player.ip == ip:
                 return player
         raise ValueError("Player not found")
 
@@ -67,11 +76,24 @@ class Network:
     def get_ip_port(self, player: Player) -> Tuple[any, any]:
         return player.ip, player.port
 
+    """"Removes players with hp == 0."""
+
+    def remove_dead_players(self):
+        for player in self.players:
+            if player.hp == 0:
+                self.remove_player(player)
+
     """Removes a player from the network and re-links the remaining players."""
 
-    def remove_player(self, player_id):
-        self.players = [player for player in self.players if player.id != player_id]
+    def remove_player(self, player_to_remove):
+        self.players = [player for player in self.players if player != player_to_remove]
         self._link_players()
+
+    """Reset players status for new round to begin"""
+
+    def reset_players_for_new_round(self):
+        for player in self.players:
+            player.reset_for_new_round()
 
     """Binds the network socket to the specified IP and returns the corresponding player."""
 
@@ -81,24 +103,6 @@ class Network:
                 self.socket.bind((player.ip, player.port))
                 return player
         raise ValueError("Player not found")
-
-    """Retorna uma lista dos jogadores ordenados de player.anterior ate player.proximo."""
-    # Funcao utilizada para finalizar rotinas, um jogador envia mensagem para os outros pararem de escutar
-    # Se faz necessario "desligar" os jogadores na ordem correta, ou a integridade da rede pode ser prejudicada
-
-    def get_reversed_ordered_players(self, starting_player: Player) -> list[Player]:
-        ordered_players = []
-        current_player = starting_player.next  # Começa com o jogador seguinte
-
-        # Continua até que o loop retorne ao jogador de partida
-        while current_player != starting_player:
-            ordered_players.append(current_player)
-            current_player = (
-                current_player.next
-            )  # Move para o próximo jogador na sequência
-
-        # Reverte a lista para começar pelo jogador anterior ao de entrada
-        return ordered_players.reverse()
 
     def get_players_starting_with(self, starting_player: Player) -> list[Player]:
         ordered_players = [starting_player]

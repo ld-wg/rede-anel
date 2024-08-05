@@ -22,6 +22,8 @@ class Message:
         "confirm_shuffle",
         "end_shuffle",
         "end_bid",
+        "update_hp",
+        "round_won",
     }
 
     def __init__(self, owner, origin, dest, type, play, confirm):

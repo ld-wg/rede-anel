@@ -1,7 +1,6 @@
-from typing import Tuple
+import os
 
-
-START_LIFE = 12  # Initialize with 12 lives
+START_HP = 12  # Initialize with 12 hp
 
 
 class Player:
@@ -10,14 +9,18 @@ class Player:
         self.ip = ip
         self.port = port
         self.dealer = False
-        self.lives = START_LIFE
+        self.hp = START_HP
         self.cards = []
         self.round_wins = 0
         self.bid = 0
-        self.stick = False
-        self.turn = False
         self.next: Player = None  # Link to the next player for the ring network
         self.plays: list[tuple[int, str]] = []
+
+    def reset_for_new_round(self):
+        self.cards = []
+        self.plays = []
+        self.bid = 0
+        self.round_wins = 0
 
     def receive_card(self, card):
         print(f"Player {self.ip} received card {card}")
@@ -30,11 +33,24 @@ class Player:
                 card_input = int(input(f"Choose a card from your hand: {self.cards} "))
                 if card_input in self.cards:
                     self.cards.remove(card_input)
+                    print(f"You played {card_input}")
                     return card_input
                 else:
                     print("Sorry, you don't have this card. Please try another.")
             except ValueError:
                 print("Please enter a valid number.")
+
+    def update_hp(self):
+        # Calculate the potential new HP
+        potential_hp = self.hp - abs(self.bid - self.round_wins)
+        # Check if the new HP is negative
+        if potential_hp < 0:
+            self.hp = 0
+        else:
+            self.hp = potential_hp
+
+    def set_hp(self, hp):
+        self.hp = int(hp)
 
     def set_bid(self, bid):
         self.bid = int(bid)
@@ -48,12 +64,6 @@ class Player:
     def get_local(self):
         return {"ip": self.ip, "port": self.port}
 
-    def get_stick(self):
-        self.stick = True
-
-    def drop_stick(self):
-        self.stick = False
-
     def win_round(self):
         self.round_wins += 1
 
@@ -64,6 +74,4 @@ class Player:
         self.plays = []
 
     def __repr__(self):
-        return (
-            f"Player(id={self.id}, ip={self.ip}, port={self.port}, lives={self.lives})"
-        )
+        return f"Player(id={self.id}, ip={self.ip}, port={self.port}, hp={self.hp})"
