@@ -18,6 +18,7 @@ class Message:
         "shuffle",
         "bid",
         "play",
+        "ack_play",
         "end_play",
         "confirm_shuffle",
         "end_shuffle",
@@ -36,7 +37,4 @@ class Message:
         self.confirm = confirm  # Boolean to confirm actions or receipt
 
     def __str__(self):
-        return (
-            f"Message from {self.origin} to {self.dest} - Type: {self.type}, "
-            f"Play: {self.play}, Confirmed: {self.confirm}"
-        )
+        return f"Message: {self.origin} to {self.dest} - T: {self.type}, P: {self.play}, C: {self.confirm}"

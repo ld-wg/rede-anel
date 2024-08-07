@@ -39,30 +39,28 @@ def main():
         else:
             wait_for_cards(local_player, network)
 
-        print(f"Player {local_player.ip} successfuly exited distribute cards")
         print(f"Your cards are: {local_player.cards}. Wait to bid.")
 
         # Novamente apenas o dealer ira enviar as mensagens do tipo "bid" para cada outro jogador.
         # Outros players aguardam a mensagem, se forem destinararios, colocam a "bid" e confirm=true na mensagem, e enviam para o dealer
         # Quandos acabarem os players, o dealer envia uma mensagem para todos com "end_bid"
+
         if local_player.dealer:
             send_bids(network, cards_in_round)
         else:
             wait_and_respond_to_bids(local_player, network, cards_in_round)
-
-        print(f"Player {local_player.ip} successfuly exited collecting bids")
 
         if local_player.dealer:
             get_cards(network, cards_in_round)
         else:
             wait_get_cards(network, local_player)
 
-        print(f"Player {local_player.ip} successfuly exited round")
-
         if local_player.dealer:
             finish_round(network)
         else:
             wait_finish_round(network, local_player)
+
+        network.pass_dealer()
 
         if local_player.hp == 0:
             loser = True
@@ -75,7 +73,6 @@ def main():
             break
 
         network.reset_players_for_new_round()
-        network.pass_dealer()
 
     if loser:
         print("You lost!")
@@ -84,12 +81,10 @@ def main():
 
 
 def up_down_counter():
-    while True:  # Infinite loop to continuously repeat the pattern
-        # Count down from 13 to 1
-        for i in range(5, 0, -1):
+    while True:
+        for i in range(13, 0, -1):
             yield i
-        # Count up from 2 to 13 (2 because 1 is already yielded in the countdown)
-        for i in range(2, 6):
+        for i in range(2, 14):
             yield i
 
 

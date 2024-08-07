@@ -89,17 +89,30 @@ def get_cards(network: Network, cards_in_round: int):
     starting_player = dealer.next
 
     for _ in range(cards_in_round):
-        os.system("clear")
         dealer.reset_plays()
         for player in network.get_players_starting_with(starting_player):
             if player.id == dealer.id:
-                dealer.plays.append((player.play_card(), player.id))
+                play = player.play_card()
+                dealer.plays.append((play, player.id))
                 #!
                 own_play = pickle.dumps(
-                    Message(dealer.id, dealer.ip, dealer.ip, "play", player.hp, "")
+                    Message(dealer.id, dealer.ip, dealer.ip, "ack_play", play, "")
                 )
                 network.socket.sendto(own_play, network.get_ip_port(dealer.next))
                 #!
+                while True:
+                    raw_data = network.socket.recv(4096)
+                    data: Message = pickle.loads(raw_data)
+                    if data.dest == dealer.ip:
+                        if data.type == "ack_play":
+                            print(f"Player {data.origin} has played {int(data.play)}.")
+                            break
+                    else:
+                        network.socket.sendto(
+                            raw_data, network.get_ip_port(dealer.next)
+                        )
+                    data = None
+
             else:
                 # Envia mensagem pedindo a carta do jogador
                 play_message = pickle.dumps(
@@ -115,8 +128,37 @@ def get_cards(network: Network, cards_in_round: int):
                     if data.dest == dealer.ip:
                         if data.type == "play" and data.confirm == "true":
                             dealer.plays.append((int(data.play), data.owner))
-                            print(f"Play received from {data.origin}: {data.play}")
+
+                            ack_play_message = pickle.dumps(
+                                Message(
+                                    dealer.id,
+                                    data.origin,
+                                    dealer.ip,
+                                    "ack_play",
+                                    data.play,
+                                    "",
+                                )
+                            )
+                            network.socket.sendto(
+                                ack_play_message, network.get_ip_port(dealer.next)
+                            )
+                            while True:
+                                raw_data = network.socket.recv(4096)
+                                data: Message = pickle.loads(raw_data)
+                                if data.dest == dealer.ip:
+                                    if data.type == "ack_play":
+                                        print(
+                                            f"Player {data.origin} has played {int(data.play)}."
+                                        )
+                                        break
+                                else:
+                                    network.socket.sendto(
+                                        raw_data, network.get_ip_port(dealer.next)
+                                    )
+                                data = None
+
                             break
+
                         else:
                             print(
                                 f"Player {dealer.ip} was expecting type play and confirm true, received {data.type} from {data.origin}"
@@ -161,10 +203,10 @@ def get_cards(network: Network, cards_in_round: int):
     # Após receber todos as jogadas da rodada, envia a mensagem de finalização de rodada
     for player in network.players:
         if player.id != dealer.id:
-            end_bid_message = pickle.dumps(
+            end_play_message = pickle.dumps(
                 Message(dealer.id, dealer.ip, player.ip, "end_play", "", "")
             )
-            network.socket.sendto(end_bid_message, network.get_ip_port(dealer.next))
+            network.socket.sendto(end_play_message, network.get_ip_port(dealer.next))
             while True:
                 raw_data = network.socket.recv(4096)
                 data: Message = pickle.loads(raw_data)
@@ -231,16 +273,14 @@ def wait_get_cards(network: Network, local_player: Player):
             else:
                 if data.type == "round_won":
                     if data.play == "draw":
-                        print("This play was a draw.")
+                        print("This play was a draw. Wait to play.")
                     else:
                         player = network.get_player_by_id(data.play)
-                        print(f"Player {player.ip} won this play!")
+                        print(f"Player {player.ip} won this play! Wait to play.")
 
-                if data.type == "play":
-                    if data.confirm == "true":
-                        print(f"Player {data.origin} has played {int(data.play)}.")
-                    else:
-                        print(f"Player {data.dest} has played {int(data.play)}.")
+                if data.type == "ack_play":
+                    print(f"Player {data.origin} has played {int(data.play)}.")
+
                 # Passa a mensagem adiante se não for destinada ao jogador local
                 network.socket.sendto(raw_data, network.get_ip_port(local_player.next))
 
@@ -277,7 +317,7 @@ def get_bid(cards_in_round: int) -> int:
         except ValueError:
             print("Por favor, insira um número válido.")
             bid = 0  # Ensure bid is reset if input is not a valid integer
-    print(f"You bid {bid}.")
+    print(f"You bid {bid}. Wait to play.")
     return bid
 
 
@@ -287,9 +327,7 @@ def send_bids(network: Network, cards_in_round: int):
     # Para cada jogador, envia a mensagem de "bid" e aguarda confirmacao
     for player in network.get_players_starting_with(dealer):
         if player.id == dealer.id:
-            dealer.set_bid(
-                get_bid(cards_in_round)
-            )  # Set the dealer's bid once a valid input is received
+            dealer.set_bid(get_bid(cards_in_round))
 
         else:
             # Cria a mensagem de lance inicial
@@ -306,7 +344,7 @@ def send_bids(network: Network, cards_in_round: int):
                 if data.dest == dealer.ip:
                     if data.type == "bid" and data.confirm == "true":
                         player.set_bid(data.play)
-                        print(f"Bid received from {data.origin}: {data.play}")
+                        # print(f"Bid received from {data.origin}: {data.play}")
                         break
                     else:
                         print(
@@ -327,7 +365,6 @@ def send_bids(network: Network, cards_in_round: int):
             while True:
                 raw_data = network.socket.recv(4096)
                 data: Message = pickle.loads(raw_data)
-                print(data)
 
                 if data.dest == dealer.ip:
                     if data.type == "end_bid":
@@ -428,7 +465,6 @@ def wait_for_cards(local_player: Player, network: Network):
                     network.socket.sendto(
                         pickle.dumps(message), network.get_ip_port(local_player.next)
                     )
-                    print("HAHAHAH")
                     break
                 else:
                     print(
@@ -455,9 +491,8 @@ def distribute_cards(dealer: Player, network: Network, cards_in_round: int):
     for card_index, card in enumerate(deck):
         player = network.players[card_index // cards_in_round]
         if player.id == dealer.id:
-            dealer.receive_card(card)  # Dealer directly receives the card
+            dealer.receive_card(card)
         else:
-            # Serialize and send the card to the player
             message = pickle.dumps(
                 Message(dealer.id, dealer.ip, player.ip, "shuffle", card, "")
             )
@@ -466,7 +501,6 @@ def distribute_cards(dealer: Player, network: Network, cards_in_round: int):
             while True:
                 raw_data = network.socket.recv(4096)
                 data: Message = pickle.loads(raw_data)
-                print(data)
 
                 if data.dest == dealer.ip:
                     if data.type == "shuffle":
@@ -492,7 +526,6 @@ def distribute_cards(dealer: Player, network: Network, cards_in_round: int):
             while True:
                 raw_data = network.socket.recv(4096)
                 data: Message = pickle.loads(raw_data)
-                print(data)
 
                 if data.dest == dealer.ip:
                     if data.type == "end_shuffle":

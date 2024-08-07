@@ -23,7 +23,6 @@ class Player:
         self.round_wins = 0
 
     def receive_card(self, card):
-        print(f"Player {self.ip} received card {card}")
         self.cards.append(int(card))
         self.cards.sort()
 
@@ -33,7 +32,6 @@ class Player:
                 card_input = int(input(f"Choose a card from your hand: {self.cards} "))
                 if card_input in self.cards:
                     self.cards.remove(card_input)
-                    print(f"You played {card_input}")
                     return card_input
                 else:
                     print("Sorry, you don't have this card. Please try another.")

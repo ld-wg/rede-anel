@@ -46,13 +46,20 @@ class Network:
         raise ValueError("Dealer not found")
 
     def pass_dealer(self):
-        current_dealer = self.players[0]
-        for player in self.players:
-            if player.dealer:
-                current_dealer = player
+        dealer = self.find_dealer()
+        next_dealer = None
 
-        current_dealer.next.set_dealer()
-        current_dealer.unset_dealer()
+        # Find the next player with hp greater than 0, starting from the dealer's next player.
+        for player in self.get_players_starting_with(dealer.next):
+            if player.hp > 0:
+                next_dealer = player
+                break
+
+        # If a valid next dealer is found and it is not the current dealer.
+        if next_dealer and next_dealer.id != dealer.id:
+            for player in self.players:
+                player.unset_dealer()
+            next_dealer.set_dealer()
 
     def get_player_by_id(self, id) -> Player:
         for player in self.players:
